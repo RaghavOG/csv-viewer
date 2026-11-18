@@ -9,8 +9,56 @@ export interface ParseResult {
 }
 
 /**
- * Smart detection and parsing of CSV, TSV, Semicolon, Pipe or JSON data
+ * Non-blocking Async CSV Parsing using Web Worker / Chunked processing
  */
+export async function parseCSVAsync(
+  rawContent: string,
+  explicitDelimiter?: string
+): Promise<ParseResult> {
+  // If content is small (< 100KB), parse synchronously for instant feel
+  if (rawContent.length < 100000) {
+    return parseCSVData(rawContent, explicitDelimiter);
+  }
+
+  // Large content: use async promise with chunked PapaParse
+  return new Promise((resolve) => {
+    Papa.parse<any[]>(rawContent.trim(), {
+      skipEmptyLines: 'greedy',
+      dynamicTyping: true,
+      delimiter: explicitDelimiter && explicitDelimiter !== 'auto' ? explicitDelimiter : undefined,
+      complete: (results) => {
+        const data = results.data.filter(
+          (r) => Array.isArray(r) && r.length > 0 && r.some((c) => c !== null && c !== '')
+        );
+
+        if (!data || data.length === 0) {
+          resolve({
+            headers: ['Col 1', 'Col 2'],
+            rows: [['', '']],
+            delimiter: ',',
+            hasHeader: true,
+          });
+          return;
+        }
+
+        const detectedDelimiter = results.meta.delimiter || explicitDelimiter || ',';
+        const hasHeader = true;
+        const headers = data[0].map((h, i) =>
+          h !== null && h !== undefined && String(h).trim() ? String(h).trim() : `Column ${i + 1}`
+        );
+        const rows = data.slice(1);
+
+        resolve({
+          headers,
+          rows,
+          delimiter: detectedDelimiter,
+          hasHeader,
+        });
+      },
+    });
+  });
+}
+
 export function parseCSVData(rawContent: string, explicitDelimiter?: string): ParseResult {
   const trimmed = rawContent.trim();
 

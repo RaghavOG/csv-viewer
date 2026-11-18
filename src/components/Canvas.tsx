@@ -1,13 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CSVNode } from '@/types';
+import { CSVNode, ConnectorArrow, PeerCursor } from '@/types';
 import { SAMPLE_NODES } from '@/utils/sampleData';
-import { parseCSVData } from '@/utils/csvParser';
+import { parseCSVAsync } from '@/utils/csvParser';
+import {
+  saveTablesToStorage,
+  loadTablesFromStorage,
+  saveArrowsToStorage,
+  loadArrowsFromStorage,
+} from '@/utils/storage';
+import { CollabManager } from '@/utils/collaboration';
 import { CSVCard } from './CSVCard';
+import { CanvasConnectors, getNodePortCoord } from './CanvasConnectors';
+import { PeerCursors } from './PeerCursors';
 import { Toolbar } from './Toolbar';
 import { PasteModal } from './PasteModal';
 import { DiffModal } from './DiffModal';
+import { JoinModal } from './JoinModal';
 import { HelpModal } from './HelpModal';
 import { CellTooltip } from './CellTooltip';
 
@@ -22,6 +32,15 @@ export const Canvas: React.FC = () => {
   // Nodes (Tables on the plane)
   const [nodes, setNodes] = useState<CSVNode[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Connector Arrows
+  const [arrows, setArrows] = useState<ConnectorArrow[]>([]);
+  const [connectingState, setConnectingState] = useState<{
+    fromNodeId: string;
+    fromSide: 'top' | 'right' | 'bottom' | 'left';
+    currentX: number;
+    currentY: number;
+  } | null>(null);
 
   // Dragging a specific card
   const [draggingNode, setDraggingNode] = useState<{
@@ -40,65 +59,22 @@ export const Canvas: React.FC = () => {
     y: number;
   } | null>(null);
 
+  // Collaboration State
+  const [peers, setPeers] = useState<Map<string, PeerCursor>>(new Map());
+  const collabRef = useRef<CollabManager | null>(null);
+
   // Theme
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Modals
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Mouse screen coordinate tracker for pasting right at cursor
   const mousePosRef = useRef({ x: 600, y: 400 });
   const canvasRef = useRef<HTMLDivElement>(null);
-
-  // Initialize theme and sample data from LocalStorage or defaults
-  useEffect(() => {
-    // Check saved theme
-    const savedTheme = localStorage.getItem('plane_csv_theme') as 'light' | 'dark' | null;
-    const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(initialTheme);
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Check saved tables or load samples
-    const savedData = localStorage.getItem('plane_csv_tables');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setNodes(parsed);
-          return;
-        }
-      } catch {
-        // Fallback
-      }
-    }
-
-    setNodes(SAMPLE_NODES);
-  }, []);
-
-  // Save nodes to LocalStorage whenever they change
-  useEffect(() => {
-    if (nodes.length > 0) {
-      localStorage.setItem('plane_csv_tables', JSON.stringify(nodes));
-    }
-  }, [nodes]);
-
-  // Toggle Theme
-  const handleToggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('plane_csv_theme', next);
-    if (next === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   // Convert screen coordinates to canvas world coordinates
   const screenToWorld = useCallback(
@@ -111,10 +87,96 @@ export const Canvas: React.FC = () => {
     [pan, zoom]
   );
 
-  // Track mouse coordinates
-  const handleMouseMoveGlobal = useCallback((e: React.MouseEvent) => {
-    mousePosRef.current = { x: e.clientX, y: e.clientY };
+  // Initialize theme, IndexedDB, and Collaboration Channel
+  useEffect(() => {
+    // Theme setup
+    const savedTheme = localStorage.getItem('plane_csv_theme') as 'light' | 'dark' | null;
+    const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(initialTheme);
+    if (initialTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Load tables from high-capacity IndexedDB
+    loadTablesFromStorage().then((savedNodes) => {
+      if (savedNodes && savedNodes.length > 0) {
+        setNodes(savedNodes);
+      } else {
+        setNodes(SAMPLE_NODES);
+      }
+    });
+
+    // Load arrows from IndexedDB
+    loadArrowsFromStorage().then((savedArrows) => {
+      if (savedArrows) {
+        setArrows(savedArrows);
+      }
+    });
+
+    // Collaboration engine init
+    const collab = new CollabManager();
+    collabRef.current = collab;
+
+    collab.onCursor((peerCursor) => {
+      setPeers((prev) => {
+        const next = new Map(prev);
+        next.set(peerCursor.id, peerCursor);
+        return next;
+      });
+    });
+
+    collab.onSyncNodes((syncedNodes) => {
+      setNodes(syncedNodes);
+    });
+
+    collab.onSyncArrows((syncedArrows) => {
+      setArrows(syncedArrows);
+    });
+
+    // Cleanup stale cursors every 5 seconds
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setPeers((prev) => {
+        const next = new Map();
+        prev.forEach((p, k) => {
+          if (now - p.lastActive < 10000) {
+            next.set(k, p);
+          }
+        });
+        return next;
+      });
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      collab.destroy();
+    };
   }, []);
+
+  // Save nodes and arrows to IndexedDB whenever modified
+  useEffect(() => {
+    if (nodes.length > 0) {
+      saveTablesToStorage(nodes);
+    }
+  }, [nodes]);
+
+  useEffect(() => {
+    saveArrowsToStorage(arrows);
+  }, [arrows]);
+
+  // Toggle Theme
+  const handleToggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('plane_csv_theme', next);
+    if (next === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   // Zoom to Fit All
   const handleFitAll = () => {
@@ -167,8 +229,8 @@ export const Canvas: React.FC = () => {
         title: data.title,
         x: Math.round(worldPos.x - 200),
         y: Math.round(worldPos.y - 100),
-        width: Math.min(720, Math.max(480, data.headers.length * 130)),
-        height: Math.min(520, Math.max(340, data.rows.length * 36 + 180)),
+        width: Math.min(760, Math.max(480, data.headers.length * 130)),
+        height: Math.min(520, Math.max(340, data.rows.length * 34 + 180)),
         headers: data.headers,
         rows: data.rows,
         delimiter: data.delimiter,
@@ -185,7 +247,11 @@ export const Canvas: React.FC = () => {
         viewMode: 'table',
       };
 
-      setNodes((prev) => [...prev, newNode]);
+      setNodes((prev) => {
+        const next = [...prev, newNode];
+        collabRef.current?.broadcastNodes(next);
+        return next;
+      });
       setSelectedNodeId(newNode.id);
     },
     [screenToWorld]
@@ -193,8 +259,7 @@ export const Canvas: React.FC = () => {
 
   // Global Clipboard Paste (`Ctrl+V` on canvas)
   useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      // Don't intercept if user is typing into an input/textarea
+    const handlePaste = async (e: ClipboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
         return;
@@ -203,10 +268,10 @@ export const Canvas: React.FC = () => {
       const text = e.clipboardData?.getData('text');
       if (!text || !text.trim()) return;
 
-      const parsed = parseCSVData(text);
+      const parsed = await parseCSVAsync(text);
       if (parsed && parsed.rows.length > 0) {
         addNewTable({
-          title: `Pasted Table (${parsed.rows.length} rows)`,
+          title: `Pasted Table (${parsed.rows.length.toLocaleString()} rows)`,
           headers: parsed.headers,
           rows: parsed.rows,
           delimiter: parsed.delimiter,
@@ -218,7 +283,7 @@ export const Canvas: React.FC = () => {
     return () => window.removeEventListener('paste', handlePaste);
   }, [addNewTable]);
 
-  // Keyboard Shortcuts: Space key for pan tool
+  // Space key pan tool
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat) {
@@ -249,11 +314,9 @@ export const Canvas: React.FC = () => {
     e.preventDefault();
 
     if (e.ctrlKey || e.metaKey) {
-      // Pinch to Zoom
       const zoomFactor = -e.deltaY * 0.002;
       const newZoom = Math.min(Math.max(zoom * (1 + zoomFactor), 0.15), 3.0);
 
-      // Zoom towards mouse cursor
       const mouseX = e.clientX;
       const mouseY = e.clientY;
 
@@ -263,7 +326,6 @@ export const Canvas: React.FC = () => {
       setZoom(newZoom);
       setPan({ x: newPanX, y: newPanY });
     } else {
-      // Two finger pan or wheel scroll
       setPan((prev) => ({
         x: prev.x - e.deltaX,
         y: prev.y - e.deltaY,
@@ -271,9 +333,8 @@ export const Canvas: React.FC = () => {
     }
   };
 
-  // Canvas Panning (MouseDown on canvas)
+  // Canvas Mouse Down
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    // Only pan if middle click (button 1), space is pressed, or clicked directly on canvas background
     if (e.button === 1 || spacePressed || e.target === canvasRef.current) {
       e.preventDefault();
       setIsPanning(true);
@@ -282,9 +343,13 @@ export const Canvas: React.FC = () => {
     }
   };
 
-  // Canvas Mouse Move (handle Panning or Node Dragging)
+  // Canvas Mouse Move
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    handleMouseMoveGlobal(e);
+    mousePosRef.current = { x: e.clientX, y: e.clientY };
+
+    // Broadcast world cursor to peers
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    collabRef.current?.sendCursor(worldPos.x, worldPos.y);
 
     if (isPanning) {
       setPan({
@@ -298,8 +363,8 @@ export const Canvas: React.FC = () => {
       const deltaX = (e.clientX - draggingNode.startX) / zoom;
       const deltaY = (e.clientY - draggingNode.startY) / zoom;
 
-      setNodes((prev) =>
-        prev.map((node) => {
+      setNodes((prev) => {
+        const next = prev.map((node) => {
           if (node.id === draggingNode.id) {
             return {
               ...node,
@@ -308,15 +373,55 @@ export const Canvas: React.FC = () => {
             };
           }
           return node;
-        })
-      );
+        });
+        collabRef.current?.broadcastNodes(next);
+        return next;
+      });
+      return;
+    }
+
+    if (connectingState) {
+      setConnectingState((prev) => (prev ? { ...prev, currentX: worldPos.x, currentY: worldPos.y } : null));
     }
   };
 
-  // Mouse Up
-  const handleCanvasMouseUp = () => {
+  // Canvas Mouse Up
+  const handleCanvasMouseUp = (e: React.MouseEvent) => {
     setIsPanning(false);
     setDraggingNode(null);
+
+    // If dragging a connector arrow, check if released over a target node
+    if (connectingState) {
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+
+      // Find node under release
+      const targetNode = nodes.find(
+        (n) =>
+          n.id !== connectingState.fromNodeId &&
+          worldPos.x >= n.x &&
+          worldPos.x <= n.x + n.width &&
+          worldPos.y >= n.y &&
+          worldPos.y <= n.y + (n.isMinimized ? 44 : n.height)
+      );
+
+      if (targetNode) {
+        const newArrow: ConnectorArrow = {
+          id: `arrow-${Date.now()}`,
+          fromNodeId: connectingState.fromNodeId,
+          fromSide: connectingState.fromSide,
+          toNodeId: targetNode.id,
+          toSide: 'left',
+          label: '1:N',
+        };
+        setArrows((prev) => {
+          const next = [...prev, newArrow];
+          collabRef.current?.broadcastArrows(next);
+          return next;
+        });
+      }
+
+      setConnectingState(null);
+    }
   };
 
   // Start dragging a node
@@ -332,16 +437,48 @@ export const Canvas: React.FC = () => {
     });
   };
 
+  // Start pulling a connector from a port
+  const handleStartConnecting = (
+    nodeId: string,
+    side: 'top' | 'right' | 'bottom' | 'left',
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    setConnectingState({
+      fromNodeId: nodeId,
+      fromSide: side,
+      currentX: worldPos.x,
+      currentY: worldPos.y,
+    });
+  };
+
+  // Delete an arrow
+  const handleDeleteArrow = (id: string) => {
+    setArrows((prev) => {
+      const next = prev.filter((a) => a.id !== id);
+      collabRef.current?.broadcastArrows(next);
+      return next;
+    });
+  };
+
   // Update a single node
   const handleUpdateNode = (id: string, updates: Partial<CSVNode>) => {
-    setNodes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, ...updates } : n))
-    );
+    setNodes((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, ...updates } : n));
+      collabRef.current?.broadcastNodes(next);
+      return next;
+    });
   };
 
   // Delete a node
   const handleDeleteNode = (id: string) => {
-    setNodes((prev) => prev.filter((n) => n.id !== id));
+    setNodes((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      collabRef.current?.broadcastNodes(next);
+      return next;
+    });
+    setArrows((prev) => prev.filter((a) => a.fromNodeId !== id && a.toNodeId !== id));
   };
 
   // Duplicate a node
@@ -353,15 +490,19 @@ export const Canvas: React.FC = () => {
       x: node.x + 40,
       y: node.y + 40,
     };
-    setNodes((prev) => [...prev, copy]);
+    setNodes((prev) => {
+      const next = [...prev, copy];
+      collabRef.current?.broadcastNodes(next);
+      return next;
+    });
   };
 
-  // File Upload via Toolbar or Drag & Drop
+  // Async File Upload via Toolbar or Drag & Drop
   const processUploadedFile = (file: File, clientCoords?: { x: number; y: number }) => {
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = event.target?.result as string;
-      const parsed = parseCSVData(content);
+      const parsed = await parseCSVAsync(content);
       addNewTable(
         {
           title: file.name.replace(/\.[^/.]+$/, ''),
@@ -382,6 +523,49 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  // Export Entire Workspace to .planecsv JSON
+  const handleExportWorkspace = () => {
+    const project = {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      nodes,
+      arrows,
+    };
+    const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PlaneCSV_Workspace_${new Date().toISOString().slice(0, 10)}.planecsv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import Entire Workspace from .planecsv JSON
+  const handleImportWorkspace = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.nodes && Array.isArray(parsed.nodes)) {
+          setNodes(parsed.nodes);
+          collabRef.current?.broadcastNodes(parsed.nodes);
+        }
+        if (parsed.arrows && Array.isArray(parsed.arrows)) {
+          setArrows(parsed.arrows);
+          collabRef.current?.broadcastArrows(parsed.arrows);
+        }
+      } catch {
+        alert('Invalid .planecsv project file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Drag and Drop files directly onto canvas
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -398,7 +582,7 @@ export const Canvas: React.FC = () => {
   };
 
   // Add Sample Data
-  const handleAddSample = () => {
+  const handleAddSample = async () => {
     const templates = [
       {
         title: 'SaaS Subscription Churn Analysis',
@@ -421,7 +605,7 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
     ];
 
     const pick = templates[Math.floor(Math.random() * templates.length)];
-    const parsed = parseCSVData(pick.data);
+    const parsed = await parseCSVAsync(pick.data);
     addNewTable({
       title: pick.title,
       headers: parsed.headers,
@@ -456,8 +640,12 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
         onUploadFile={handleToolbarUpload}
         onAddSample={handleAddSample}
         onOpenDiffModal={() => setIsDiffModalOpen(true)}
+        onOpenJoinModal={() => setIsJoinModalOpen(true)}
         onOpenHelp={() => setIsHelpOpen(true)}
+        onExportWorkspace={handleExportWorkspace}
+        onImportWorkspace={handleImportWorkspace}
         totalTables={nodes.length}
+        peerCount={peers.size}
       />
 
       {/* Infinite Canvas Coordinate Plane Container */}
@@ -468,6 +656,18 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
         }}
         className="absolute inset-0 pointer-events-auto transition-transform duration-75 ease-out"
       >
+        {/* Canvas Connector Arrows Layer */}
+        <CanvasConnectors
+          arrows={arrows}
+          nodes={nodes}
+          onDeleteArrow={handleDeleteArrow}
+          activeConnecting={connectingState}
+        />
+
+        {/* Live Collaborator Cursors Layer */}
+        <PeerCursors cursors={Array.from(peers.values())} />
+
+        {/* CSV Tables */}
         {nodes.map((node) => (
           <CSVCard
             key={node.id}
@@ -480,6 +680,7 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
             onDuplicate={() => handleDuplicateNode(node)}
             onStartDrag={(e) => handleStartDragNode(e, node)}
             onHoverCell={(info) => setHoveredCell(info)}
+            onStartConnecting={handleStartConnecting}
           />
         ))}
 
@@ -524,6 +725,14 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
         isOpen={isDiffModalOpen}
         onClose={() => setIsDiffModalOpen(false)}
         nodes={nodes}
+      />
+
+      {/* Join / VLOOKUP Modal */}
+      <JoinModal
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
+        nodes={nodes}
+        onJoinTables={(data) => addNewTable(data)}
       />
 
       {/* Shortcuts & Help Modal */}

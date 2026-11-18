@@ -28,6 +28,25 @@ export interface CSVNode {
   };
 }
 
+export interface ConnectorArrow {
+  id: string;
+  fromNodeId: string;
+  fromSide: 'top' | 'right' | 'bottom' | 'left';
+  toNodeId: string;
+  toSide: 'top' | 'right' | 'bottom' | 'left';
+  label?: string;
+  color?: string;
+}
+
+export interface PeerCursor {
+  id: string;
+  name: string;
+  color: string;
+  x: number;
+  y: number;
+  lastActive: number;
+}
+
 export interface CanvasState {
   pan: { x: number; y: number };
   zoom: number;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useMemo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   ArrowUpDown,
   ArrowUp,
@@ -26,6 +27,7 @@ import {
   Check,
   Calculator,
   Palette,
+  FunctionSquare,
 } from 'lucide-react';
 import { CSVNode, ColumnType } from '@/types';
 import {
@@ -37,6 +39,7 @@ import {
   exportToJSON,
   exportToMarkdown,
 } from '@/utils/csvParser';
+import { evaluateFormula } from '@/utils/formulaEngine';
 
 interface CSVCardProps {
   node: CSVNode;
@@ -48,6 +51,7 @@ interface CSVCardProps {
   onDuplicate: () => void;
   onStartDrag: (e: React.MouseEvent) => void;
   onHoverCell: (info: { content: string; columnName: string; x: number; y: number } | null) => void;
+  onStartConnecting?: (nodeId: string, side: 'top' | 'right' | 'bottom' | 'left', e: React.MouseEvent) => void;
 }
 
 const COLOR_MAP = {
@@ -104,6 +108,7 @@ export const CSVCard: React.FC<CSVCardProps> = ({
   onDelete,
   onStartDrag,
   onHoverCell,
+  onStartConnecting,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleVal, setEditingTitleVal] = useState(node.title);
@@ -116,6 +121,7 @@ export const CSVCard: React.FC<CSVCardProps> = ({
   const [copiedExport, setCopiedExport] = useState(false);
 
   const resizeRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const theme = COLOR_MAP[node.color] || COLOR_MAP.indigo;
 
   // Filter rows based on search query
@@ -152,6 +158,14 @@ export const CSVCard: React.FC<CSVCardProps> = ({
       return isAsc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
     });
   }, [filteredRows, node.sortColumn, node.sortDirection]);
+
+  // Virtualizer for smooth 60 FPS scrolling with tens of thousands of rows
+  const rowVirtualizer = useVirtualizer({
+    count: sortedRows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 33,
+    overscan: 8,
+  });
 
   // Column types
   const columnTypes: ColumnType[] = useMemo(() => {
@@ -204,9 +218,14 @@ export const CSVCard: React.FC<CSVCardProps> = ({
     const newRows = [...node.rows];
     let parsedVal: string | number | boolean = cellEditValue;
 
-    if (cellEditValue.toLowerCase() === 'true') parsedVal = true;
-    else if (cellEditValue.toLowerCase() === 'false') parsedVal = false;
-    else if (!isNaN(Number(cellEditValue)) && cellEditValue.trim() !== '') {
+    if (cellEditValue.startsWith('=')) {
+      // Formula expression preserved in cell
+      parsedVal = cellEditValue;
+    } else if (cellEditValue.toLowerCase() === 'true') {
+      parsedVal = true;
+    } else if (cellEditValue.toLowerCase() === 'false') {
+      parsedVal = false;
+    } else if (!isNaN(Number(cellEditValue)) && cellEditValue.trim() !== '') {
       parsedVal = Number(cellEditValue);
     }
 
@@ -315,8 +334,8 @@ export const CSVCard: React.FC<CSVCardProps> = ({
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = (moveEvent.clientX - startX) / zoom;
       const deltaY = (moveEvent.clientY - startY) / zoom;
-      const newW = Math.max(340, Math.round(startW + deltaX));
-      const newH = Math.max(220, Math.round(startH + deltaY));
+      const newW = Math.max(360, Math.round(startW + deltaX));
+      const newH = Math.max(240, Math.round(startH + deltaY));
       onUpdate({ width: newW, height: newH });
     };
 
@@ -337,16 +356,44 @@ export const CSVCard: React.FC<CSVCardProps> = ({
         width: `${node.width}px`,
         height: node.isMinimized ? 'auto' : `${node.height}px`,
       }}
-      className={`absolute select-none rounded-2xl bg-white dark:bg-slate-900 border shadow-xl flex flex-col overflow-hidden transition-shadow duration-200 group ${
+      className={`absolute select-none rounded-2xl bg-white dark:bg-slate-900 border shadow-xl flex flex-col overflow-visible transition-shadow duration-200 group/card ${
         isSelected
           ? 'ring-2 ring-indigo-500 shadow-2xl z-30'
           : 'hover:shadow-2xl z-10'
       } ${theme.border}`}
     >
+      {/* Connector Ports (Top, Right, Bottom, Left) */}
+      {onStartConnecting && (
+        <>
+          <div
+            onMouseDown={(e) => onStartConnecting(node.id, 'top', e)}
+            className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white dark:bg-slate-800 border-2 border-indigo-500 shadow-md cursor-crosshair opacity-0 group-hover/card:opacity-100 hover:scale-125 transition-all z-40"
+            title="Drag to connect from Top port"
+          />
+          <div
+            onMouseDown={(e) => onStartConnecting(node.id, 'right', e)}
+            className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white dark:bg-slate-800 border-2 border-indigo-500 shadow-md cursor-crosshair opacity-0 group-hover/card:opacity-100 hover:scale-125 transition-all z-40"
+            title="Drag to connect from Right port"
+          />
+          <div
+            onMouseDown={(e) => onStartConnecting(node.id, 'bottom', e)}
+            className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white dark:bg-slate-800 border-2 border-indigo-500 shadow-md cursor-crosshair opacity-0 group-hover/card:opacity-100 hover:scale-125 transition-all z-40"
+            title="Drag to connect from Bottom port"
+          />
+          <div
+            onMouseDown={(e) => onStartConnecting(node.id, 'left', e)}
+            className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white dark:bg-slate-800 border-2 border-indigo-500 shadow-md cursor-crosshair opacity-0 group-hover/card:opacity-100 hover:scale-125 transition-all z-40"
+            title="Drag to connect from Left port"
+          />
+        </>
+      )}
+
       {/* Card Header (Drag handle) */}
       <div
         onMouseDown={onStartDrag}
-        className={`px-4 py-3 flex items-center justify-between text-white cursor-grab active:cursor-grabbing ${theme.banner} transition-colors`}
+        className={`px-4 py-3 flex items-center justify-between text-white cursor-grab active:cursor-grabbing rounded-t-2xl ${
+          node.isMinimized ? 'rounded-b-2xl' : ''
+        } ${theme.banner} transition-colors`}
       >
         <div className="flex items-center gap-2.5 overflow-hidden flex-1 mr-2">
           <FileSpreadsheet className="w-4 h-4 shrink-0 text-white/90" />
@@ -378,7 +425,7 @@ export const CSVCard: React.FC<CSVCardProps> = ({
 
           {/* Row & Col Pill */}
           <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/20 text-white shrink-0 font-medium">
-            {node.rows.length}r × {node.headers.length}c
+            {node.rows.length.toLocaleString()}r × {node.headers.length}c
           </span>
         </div>
 
@@ -530,10 +577,10 @@ export const CSVCard: React.FC<CSVCardProps> = ({
 
       {/* Main Body (Collapsed if minimized) */}
       {!node.isMinimized && (
-        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900">
+        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 rounded-b-2xl overflow-hidden">
           {/* Secondary Toolbar (Search + Quick Actions) */}
           {showSearch && (
-            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 shrink-0">
               <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <input
                 type="text"
@@ -553,15 +600,15 @@ export const CSVCard: React.FC<CSVCardProps> = ({
             </div>
           )}
 
-          {/* Table View */}
+          {/* Table View with Virtual Scrolling */}
           {node.viewMode === 'table' ? (
-            <div className="flex-1 overflow-auto relative">
+            <div ref={tableContainerRef} className="flex-1 overflow-auto relative">
               <table className="w-full text-left text-xs border-collapse">
                 {/* Table Header */}
                 <thead className="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     {/* Index header */}
-                    <th className="w-10 px-2 py-2 text-[10px] text-slate-400 dark:text-slate-500 text-center font-mono border-r border-slate-200/80 dark:border-slate-700/80 select-none">
+                    <th className="w-12 px-2 py-2 text-[10px] text-slate-400 dark:text-slate-500 text-center font-mono border-r border-slate-200/80 dark:border-slate-700/80 select-none">
                       #
                     </th>
 
@@ -664,101 +711,139 @@ export const CSVCard: React.FC<CSVCardProps> = ({
                   </tr>
                 </thead>
 
-                {/* Table Body */}
+                {/* Table Body (Virtualized Window) */}
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-[11px]">
-                  {sortedRows.map((row, rowIdx) => (
-                    <tr
-                      key={rowIdx}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                      {/* Row Index */}
-                      <td className="w-10 px-2 py-1.5 text-[10px] text-slate-400 dark:text-slate-500 text-center border-r border-slate-100 dark:border-slate-800 select-none bg-slate-50/40 dark:bg-slate-900/40">
-                        {rowIdx + 1}
-                      </td>
-
-                      {/* Row Cells */}
-                      {row.map((cellValue, colIdx) => {
-                        if (node.hiddenColumns?.includes(colIdx)) return null;
-                        const align = node.columnAlignments?.[colIdx] || 'left';
-                        const isEditing = editingCell?.row === rowIdx && editingCell?.col === colIdx;
-                        const formatted = formatCellValue(cellValue);
-                        const rawStr = String(cellValue ?? '');
-
-                        return (
-                          <td
-                            key={colIdx}
-                            onDoubleClick={() => handleStartCellEdit(rowIdx, colIdx, cellValue)}
-                            onMouseEnter={(e) => {
-                              // If content is long or truncated, show preview tooltip on hover!
-                              if (rawStr.length > 20 || rawStr.includes('\n')) {
-                                onHoverCell({
-                                  content: rawStr,
-                                  columnName: node.headers[colIdx],
-                                  x: e.clientX,
-                                  y: e.clientY,
-                                });
-                              }
-                            }}
-                            onMouseLeave={() => onHoverCell(null)}
-                            className={`px-3 py-1.5 border-r border-slate-100 dark:border-slate-800 last:border-r-0 max-w-[240px] truncate ${
-                              align === 'right'
-                                ? 'text-right'
-                                : align === 'center'
-                                ? 'text-center'
-                                : 'text-left'
-                            }`}
-                          >
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                autoFocus
-                                value={cellEditValue}
-                                onChange={(e) => setCellEditValue(e.target.value)}
-                                onBlur={handleSaveCell}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSaveCell();
-                                  if (e.key === 'Escape') setEditingCell(null);
-                                }}
-                                className="w-full px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-400 outline-none text-slate-900 dark:text-slate-100 text-xs"
-                              />
-                            ) : formatted.type === 'boolean' ? (
-                              <span
-                                className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                  formatted.display === 'TRUE'
-                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-400'
-                                    : 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-400'
-                                }`}
-                              >
-                                {formatted.display}
-                              </span>
-                            ) : formatted.type === 'url' ? (
-                              <a
-                                href={formatted.raw}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-blue-500 hover:text-blue-600 dark:text-blue-400 underline truncate block"
-                              >
-                                {formatted.display}
-                              </a>
-                            ) : formatted.type === 'email' ? (
-                              <a
-                                href={`mailto:${formatted.raw}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-sky-500 hover:text-sky-600 dark:text-sky-400 underline truncate block"
-                              >
-                                {formatted.display}
-                              </a>
-                            ) : (
-                              <span className="text-slate-700 dark:text-slate-300">
-                                {formatted.display}
-                              </span>
-                            )}
-                          </td>
-                        );
-                      })}
+                  {/* Top virtual spacer */}
+                  {rowVirtualizer.getVirtualItems().length > 0 && (
+                    <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0]?.start || 0}px` }}>
+                      <td colSpan={node.headers.length + 1} />
                     </tr>
-                  ))}
+                  )}
+
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const rowIdx = virtualRow.index;
+                    const row = sortedRows[rowIdx];
+                    if (!row) return null;
+
+                    return (
+                      <tr
+                        key={rowIdx}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                      >
+                        {/* Row Index */}
+                        <td className="w-12 px-2 py-1.5 text-[10px] text-slate-400 dark:text-slate-500 text-center border-r border-slate-100 dark:border-slate-800 select-none bg-slate-50/40 dark:bg-slate-900/40">
+                          {rowIdx + 1}
+                        </td>
+
+                        {/* Row Cells */}
+                        {row.map((cellValue, colIdx) => {
+                          if (node.hiddenColumns?.includes(colIdx)) return null;
+                          const align = node.columnAlignments?.[colIdx] || 'left';
+                          const isEditing = editingCell?.row === rowIdx && editingCell?.col === colIdx;
+
+                          // Evaluate formula if cell starts with '='
+                          const isFormula = typeof cellValue === 'string' && cellValue.startsWith('=');
+                          const evaluatedVal = isFormula
+                            ? evaluateFormula(cellValue, node.headers, row, node.rows)
+                            : cellValue;
+
+                          const formatted = formatCellValue(evaluatedVal);
+                          const rawStr = String(cellValue ?? '');
+
+                          return (
+                            <td
+                              key={colIdx}
+                              onDoubleClick={() => handleStartCellEdit(rowIdx, colIdx, cellValue)}
+                              onMouseEnter={(e) => {
+                                if (rawStr.length > 20 || rawStr.includes('\n') || isFormula) {
+                                  onHoverCell({
+                                    content: isFormula ? `${rawStr} => ${evaluatedVal}` : rawStr,
+                                    columnName: node.headers[colIdx],
+                                    x: e.clientX,
+                                    y: e.clientY,
+                                  });
+                                }
+                              }}
+                              onMouseLeave={() => onHoverCell(null)}
+                              className={`px-3 py-1.5 border-r border-slate-100 dark:border-slate-800 last:border-r-0 max-w-[240px] truncate ${
+                                align === 'right'
+                                  ? 'text-right'
+                                  : align === 'center'
+                                  ? 'text-center'
+                                  : 'text-left'
+                              }`}
+                            >
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={cellEditValue}
+                                  onChange={(e) => setCellEditValue(e.target.value)}
+                                  onBlur={handleSaveCell}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveCell();
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                  className="w-full px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-400 outline-none text-slate-900 dark:text-slate-100 text-xs"
+                                />
+                              ) : isFormula ? (
+                                <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-semibold" title={rawStr}>
+                                  <FunctionSquare className="w-2.5 h-2.5" />
+                                  <span>{formatted.display}</span>
+                                </span>
+                              ) : formatted.type === 'boolean' ? (
+                                <span
+                                  className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    formatted.display === 'TRUE'
+                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-400'
+                                      : 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-400'
+                                  }`}
+                                >
+                                  {formatted.display}
+                                </span>
+                              ) : formatted.type === 'url' ? (
+                                <a
+                                  href={formatted.raw}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-blue-500 hover:text-blue-600 dark:text-blue-400 underline truncate block"
+                                >
+                                  {formatted.display}
+                                </a>
+                              ) : formatted.type === 'email' ? (
+                                <a
+                                  href={`mailto:${formatted.raw}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-sky-500 hover:text-sky-600 dark:text-sky-400 underline truncate block"
+                                >
+                                  {formatted.display}
+                                </a>
+                              ) : (
+                                <span className="text-slate-700 dark:text-slate-300">
+                                  {formatted.display}
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+
+                  {/* Bottom virtual spacer */}
+                  {rowVirtualizer.getVirtualItems().length > 0 && (
+                    <tr
+                      style={{
+                        height: `${Math.max(
+                          0,
+                          rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end || 0)
+                        )}px`,
+                      }}
+                    >
+                      <td colSpan={node.headers.length + 1} />
+                    </tr>
+                  )}
                 </tbody>
               </table>
 
@@ -771,7 +856,7 @@ export const CSVCard: React.FC<CSVCardProps> = ({
           ) : (
             /* Quick Chart Mode */
             <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-slate-900/50 overflow-hidden">
-              <div className="flex items-center gap-3 mb-3 text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex items-center gap-3 mb-3 text-xs text-slate-600 dark:text-slate-300 shrink-0">
                 <span>X Axis:</span>
                 <select
                   value={node.chartConfig?.xCol ?? 0}
@@ -888,7 +973,7 @@ export const CSVCard: React.FC<CSVCardProps> = ({
 
           {/* Stats Summary Footer */}
           {node.showStats && columnStats.length > 0 && (
-            <div className="bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-[10px] font-mono flex items-center gap-4 overflow-x-auto text-slate-600 dark:text-slate-300">
+            <div className="bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-[10px] font-mono flex items-center gap-4 overflow-x-auto text-slate-600 dark:text-slate-300 shrink-0">
               <span className="font-bold text-slate-500 uppercase tracking-wider shrink-0">
                 Stats:
               </span>
@@ -914,7 +999,7 @@ export const CSVCard: React.FC<CSVCardProps> = ({
           )}
 
           {/* Footer Bar (Add Row / Add Column controls) */}
-          <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={handleAddRow}

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   Upload,
@@ -12,8 +12,14 @@ import {
   HelpCircle,
   Sparkles,
   GitCompare,
+  GitMerge,
   FileSpreadsheet,
   Heart,
+  Share2,
+  FolderDown,
+  FolderUp,
+  Users,
+  Check,
 } from 'lucide-react';
 
 const GithubIcon = ({ className = 'w-3.5 h-3.5' }: { className?: string }) => (
@@ -35,8 +41,12 @@ interface ToolbarProps {
   onUploadFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onAddSample: () => void;
   onOpenDiffModal: () => void;
+  onOpenJoinModal?: () => void;
   onOpenHelp: () => void;
+  onExportWorkspace: () => void;
+  onImportWorkspace: (e: React.ChangeEvent<HTMLInputElement>) => void;
   totalTables: number;
+  peerCount: number;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -51,9 +61,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onUploadFile,
   onAddSample,
   onOpenDiffModal,
+  onOpenJoinModal,
   onOpenHelp,
+  onExportWorkspace,
+  onImportWorkspace,
   totalTables,
+  peerCount,
 }) => {
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleShare = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   return (
     <>
       {/* Top Floating App Bar */}
@@ -72,19 +96,24 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 infinite
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">
-              {totalTables} table{totalTables === 1 ? '' : 's'} on plane
-            </p>
+            <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500">
+              <span>{totalTables} table{totalTables === 1 ? '' : 's'}</span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <Users className="w-2.5 h-2.5" />
+                <span>{peerCount + 1} online</span>
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Center Canvas Action Bar (Excalidraw floating bar style) */}
+        {/* Center Canvas Action Bar */}
         <div className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xl border border-slate-200/90 dark:border-slate-800/90">
           {/* Paste CSV / New Table */}
           <button
             onClick={onOpenPasteModal}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            title="Paste CSV or Tabular Data (or press Ctrl+V directly on canvas)"
+            title="Paste CSV or Tabular Data (Ctrl+V directly on canvas)"
           >
             <Plus className="w-4 h-4" />
             <span>Paste CSV</span>
@@ -93,7 +122,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           {/* Upload File */}
           <label
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold cursor-pointer transition-colors"
-            title="Upload CSV / TSV / JSON file"
+            title="Upload CSV / TSV / JSON file (Async Worker parsing)"
           >
             <Upload className="w-3.5 h-3.5" />
             <span>Upload</span>
@@ -117,15 +146,72 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
           {/* Compare Tables */}
           {totalTables >= 2 && (
-            <button
-              onClick={onOpenDiffModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium transition-colors"
-              title="Compare schema & differences between 2 tables"
-            >
-              <GitCompare className="w-3.5 h-3.5 text-purple-500" />
-              <span className="hidden sm:inline">Compare</span>
-            </button>
+            <>
+              <button
+                onClick={onOpenDiffModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium transition-colors"
+                title="Compare schema & differences between 2 tables"
+              >
+                <GitCompare className="w-3.5 h-3.5 text-purple-500" />
+                <span className="hidden sm:inline">Compare</span>
+              </button>
+
+              {onOpenJoinModal && (
+                <button
+                  onClick={onOpenJoinModal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium transition-colors"
+                  title="Join / VLOOKUP two tables together"
+                >
+                  <GitMerge className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="hidden sm:inline">Join</span>
+                </button>
+              )}
+            </>
           )}
+
+          <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+          {/* Export Workspace */}
+          <button
+            onClick={onExportWorkspace}
+            className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors"
+            title="Export Entire Workspace as .planecsv JSON"
+          >
+            <FolderDown className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Import Workspace */}
+          <label
+            className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs cursor-pointer transition-colors"
+            title="Import Workspace (.planecsv JSON)"
+          >
+            <FolderUp className="w-3.5 h-3.5" />
+            <input
+              type="file"
+              accept=".json,.planecsv"
+              onChange={onImportWorkspace}
+              className="hidden"
+            />
+          </label>
+
+          {/* Share Live Link */}
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 text-xs font-semibold transition-colors"
+            title="Share live room link for collaboration"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-500 text-[11px]">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Share</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Right Controls: Branding + Theme + Help */}
@@ -167,7 +253,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </div>
       </header>
 
-      {/* Bottom-Right Zoom & Viewport Widget (Excalidraw style) */}
+      {/* Bottom-Right Zoom & Viewport Widget */}
       <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 p-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xl border border-slate-200/80 dark:border-slate-800/80 select-none">
         <button
           onClick={onZoomOut}
@@ -208,7 +294,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className="fixed bottom-4 left-4 z-40 pointer-events-none hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-slate-200/70 dark:border-slate-800/70 text-[11px] text-slate-500 dark:text-slate-400 select-none">
         <span>💡 Paste directly with <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px] text-slate-700 dark:text-slate-300">Ctrl+V</kbd> anywhere</span>
         <span>•</span>
-        <span>Pan: <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px] text-slate-700 dark:text-slate-300">Space + Drag</kbd></span>
+        <span>Connect: Drag circle ports</span>
+        <span>•</span>
+        <span>Formulas: <code className="font-mono text-indigo-500">=SUM(Col)</code></span>
       </div>
     </>
   );
