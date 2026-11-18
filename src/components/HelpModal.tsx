@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Keyboard, Sparkles, MousePointer, Layers, ArrowUpDown, Search } from 'lucide-react';
+import { X, Keyboard, Sparkles, MousePointer, Layers, Heart, Github } from 'lucide-react';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -93,7 +93,19 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <a
+            href="https://github.com/RaghavOG"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            <span>Made with</span>
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+            <span>by</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">RaghavOG</span>
+            <Github className="w-3.5 h-3.5" />
+          </a>
           <button
             onClick={onClose}
             className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"

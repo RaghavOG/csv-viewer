@@ -13,6 +13,8 @@ import {
   Sparkles,
   GitCompare,
   FileSpreadsheet,
+  Heart,
+  Github,
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -120,8 +122,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           )}
         </div>
 
-        {/* Right Controls: Theme + Help */}
+        {/* Right Controls: Branding + Theme + Help */}
         <div className="pointer-events-auto flex items-center gap-2">
+          {/* RaghavOG Branding Badge */}
+          <a
+            href="https://github.com/RaghavOG"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg border border-slate-200/80 dark:border-slate-800/80 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-800 transition-all group"
+            title="Visit RaghavOG on GitHub"
+          >
+            <span>Made with</span>
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 group-hover:scale-125 transition-transform" />
+            <span>by</span>
+            <span className="font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+              RaghavOG
+            </span>
+            <Github className="w-3.5 h-3.5 ml-0.5 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
+          </a>
+
           {/* Dark / Light Toggle */}
           <button
             onClick={onToggleTheme}

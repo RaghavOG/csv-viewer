@@ -1,14 +1,14 @@
 # PlaneCSV — Infinite Canvas CSV Viewer & Editor
 
-An infinite, free-plane workspace (like Excalidraw or Miro) built with **Next.js**, **TypeScript**, and **Tailwind CSS**, designed for pasting, visualizing, analyzing, formatting, and comparing multiple CSVs simultaneously.
+> An infinite, free-plane workspace (like Excalidraw or Miro) built with **Next.js**, **TypeScript**, and **Tailwind CSS**, designed for pasting, visualizing, analyzing, formatting, and comparing multiple CSVs simultaneously.
 
-Ready for 1-click deployment on **Vercel**.
+Made with ❤️ by [RaghavOG](https://github.com/RaghavOG)
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-- **Infinite 2D Canvas (Excalidraw Style)**
+- **Infinite 2D Free Plane (Excalidraw Style)**
   - Infinite dot grid canvas with pan & zoom (15% to 300%).
   - Pan with mouse drag, middle click, or `Space + Drag`.
   - Smooth pinch-to-zoom and mouse-wheel zoom centered on cursor.
@@ -82,3 +82,10 @@ npx vercel
 2. Go to [vercel.com/new](https://vercel.com/new).
 3. Import the repository — Next.js will be detected automatically.
 4. Click **Deploy**!
+
+---
+
+## 👨‍💻 Author
+
+Created with care by **[RaghavOG](https://github.com/RaghavOG)**.
+Contributions and feature requests are welcome!
