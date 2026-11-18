@@ -351,6 +351,10 @@ export const CSVCard: React.FC<CSVCardProps> = ({
   return (
     <div
       onClick={onSelect}
+      onWheel={(e) => {
+        // Prevent canvas panning when wheeling anywhere inside the card
+        e.stopPropagation();
+      }}
       style={{
         transform: `translate(${node.x}px, ${node.y}px)`,
         width: `${node.width}px`,
@@ -602,8 +606,19 @@ export const CSVCard: React.FC<CSVCardProps> = ({
 
           {/* Table View with Virtual Scrolling */}
           {node.viewMode === 'table' ? (
-            <div ref={tableContainerRef} className="flex-1 overflow-auto relative">
-              <table className="w-full text-left text-xs border-collapse">
+            <div
+              ref={tableContainerRef}
+              data-scrollable="true"
+              onWheel={(e) => {
+                e.stopPropagation();
+                // Support Shift + vertical mouse wheel for smooth horizontal scrolling
+                if (e.shiftKey && e.deltaY !== 0 && tableContainerRef.current) {
+                  tableContainerRef.current.scrollLeft += e.deltaY;
+                }
+              }}
+              className="flex-1 overflow-auto relative"
+            >
+              <table className="min-w-full w-max text-left text-xs border-collapse">
                 {/* Table Header */}
                 <thead className="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur border-b border-slate-200 dark:border-slate-700">
                   <tr>

@@ -321,6 +321,20 @@ export const Canvas: React.FC = () => {
 
   // Mouse Wheel Zooming & Trackpad Panning
   const handleWheel = (e: React.WheelEvent) => {
+    const target = e.target as HTMLElement;
+    const isInsideCard = !!(
+      target.closest('.group\\/card') ||
+      target.closest('[data-scrollable="true"]') ||
+      target.closest('table') ||
+      target.closest('tbody') ||
+      target.closest('thead')
+    );
+
+    // If scrolling inside a table card and not pinching/zooming with Ctrl/Cmd, do NOT pan canvas!
+    if (isInsideCard && !e.ctrlKey && !e.metaKey) {
+      return;
+    }
+
     e.preventDefault();
 
     if (e.ctrlKey || e.metaKey) {
@@ -345,6 +359,12 @@ export const Canvas: React.FC = () => {
 
   // Canvas Mouse Down
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Don't start canvas pan if clicking inside a card unless Space is held or middle-clicked
+    if (target.closest('.group\\/card') && !spacePressed && e.button !== 1) {
+      return;
+    }
+
     if (e.button === 1 || spacePressed || e.target === canvasRef.current) {
       e.preventDefault();
       setIsPanning(true);
@@ -373,8 +393,8 @@ export const Canvas: React.FC = () => {
       const deltaX = (e.clientX - draggingNode.startX) / zoom;
       const deltaY = (e.clientY - draggingNode.startY) / zoom;
 
-      setNodes((prev) => {
-        const next = prev.map((node) => {
+      setNodes((prev) =>
+        prev.map((node) => {
           if (node.id === draggingNode.id) {
             return {
               ...node,
@@ -383,10 +403,8 @@ export const Canvas: React.FC = () => {
             };
           }
           return node;
-        });
-        collabRef.current?.broadcastNodes(next);
-        return next;
-      });
+        })
+      );
       return;
     }
 
@@ -397,8 +415,11 @@ export const Canvas: React.FC = () => {
 
   // Canvas Mouse Up
   const handleCanvasMouseUp = (e: React.MouseEvent) => {
+    if (draggingNode) {
+      collabRef.current?.broadcastNodes(nodes);
+      setDraggingNode(null);
+    }
     setIsPanning(false);
-    setDraggingNode(null);
 
     // If dragging a connector arrow, check if released over a target node
     if (connectingState) {
@@ -437,6 +458,7 @@ export const Canvas: React.FC = () => {
   // Start dragging a node
   const handleStartDragNode = (e: React.MouseEvent, node: CSVNode) => {
     e.stopPropagation();
+    setIsPanning(false);
     setSelectedNodeId(node.id);
     setDraggingNode({
       id: node.id,
@@ -683,7 +705,9 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '0 0',
         }}
-        className="absolute inset-0 pointer-events-auto transition-transform duration-75 ease-out"
+        className={`absolute inset-0 pointer-events-auto ${
+          isPanning || draggingNode ? 'transition-none' : 'transition-transform duration-75 ease-out'
+        }`}
       >
         {/* Canvas Connector Arrows Layer */}
         <CanvasConnectors
