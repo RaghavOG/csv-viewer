@@ -293,6 +293,16 @@ export const Canvas: React.FC = () => {
           setSpacePressed(true);
         }
       }
+      if ((e.key === 'Delete') && selectedNodeId) {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          handleDeleteNode(selectedNodeId);
+          setSelectedNodeId(null);
+        }
+      }
+      if (e.key === 'Escape') {
+        setSelectedNodeId(null);
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -462,6 +472,15 @@ export const Canvas: React.FC = () => {
     });
   };
 
+  // Update an arrow (label, color)
+  const handleUpdateArrow = (id: string, updates: Partial<ConnectorArrow>) => {
+    setArrows((prev) => {
+      const next = prev.map((a) => (a.id === id ? { ...a, ...updates } : a));
+      collabRef.current?.broadcastArrows(next);
+      return next;
+    });
+  };
+
   // Update a single node
   const handleUpdateNode = (id: string, updates: Partial<CSVNode>) => {
     setNodes((prev) => {
@@ -479,6 +498,15 @@ export const Canvas: React.FC = () => {
       return next;
     });
     setArrows((prev) => prev.filter((a) => a.fromNodeId !== id && a.toNodeId !== id));
+  };
+
+  // Clear all tables and arrows
+  const handleClearAll = () => {
+    setNodes([]);
+    setArrows([]);
+    setSelectedNodeId(null);
+    collabRef.current?.broadcastNodes([]);
+    collabRef.current?.broadcastArrows([]);
   };
 
   // Duplicate a node
@@ -644,6 +672,7 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
         onOpenHelp={() => setIsHelpOpen(true)}
         onExportWorkspace={handleExportWorkspace}
         onImportWorkspace={handleImportWorkspace}
+        onClearAll={handleClearAll}
         totalTables={nodes.length}
         peerCount={peers.size}
       />
@@ -661,6 +690,7 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
           arrows={arrows}
           nodes={nodes}
           onDeleteArrow={handleDeleteArrow}
+          onUpdateArrow={handleUpdateArrow}
           activeConnecting={connectingState}
         />
 
@@ -685,19 +715,30 @@ Copenhagen,Denmark,21,PM10,9.5,75,41.9`,
         ))}
 
         {nodes.length === 0 && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center p-8 rounded-3xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">
-              Plane is Empty
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center p-8 rounded-3xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 text-xl font-bold">
+              📊
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Welcome to CSVee
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              Paste data with <kbd className="font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Ctrl+V</kbd>, drag & drop a CSV file, or click below to load samples.
+              Your infinite canvas for tabular data. Paste CSV via <kbd className="font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Ctrl+V</kbd>, drag & drop files, or load samples below.
             </p>
-            <button
-              onClick={handleAddSample}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-md shadow-indigo-600/20"
-            >
-              Add Sample Datasets
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={handleAddSample}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-md shadow-indigo-600/20"
+              >
+                Load Sample Datasets
+              </button>
+              <button
+                onClick={() => setIsPasteModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors"
+              >
+                Paste CSV
+              </button>
+            </div>
           </div>
         )}
       </div>

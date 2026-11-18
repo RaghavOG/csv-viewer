@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('PlaneCSV Canvas E2E Tests', () => {
+test.describe('CSVee Canvas E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Wait for the dynamic canvas to load
@@ -8,7 +8,7 @@ test.describe('PlaneCSV Canvas E2E Tests', () => {
   });
 
   test('loads branding and title', async ({ page }) => {
-    await expect(page.locator('text=PlaneCSV')).toBeVisible();
+    await expect(page.locator('text=CSVee')).toBeVisible();
     await expect(page.locator('text=RaghavOG')).toBeVisible();
   });
 

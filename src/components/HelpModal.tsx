@@ -93,6 +93,18 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 <strong>Quick Chart:</strong> Toggle between Table View and Quick Bar/Line Chart to visualize data trends immediately.
               </li>
               <li>
+                <strong>Spreadsheet Formulas:</strong> Type formulas starting with <code className="font-mono text-indigo-500">=</code> like <code className="font-mono">=SUM(Price)</code>, <code className="font-mono">=AVG(Sales)</code>, <code className="font-mono">=Price * 1.08</code>.
+              </li>
+              <li>
+                <strong>Connector Arrows:</strong> Hover any table to see the 4 port circles on the borders. Click and drag to another table to draw relationship arrows! Double click the label on an arrow to rename it.
+              </li>
+              <li>
+                <strong>Table Join / VLOOKUP:</strong> Click "Join" in the top bar to perform SQL-style Left, Inner, or Full Outer joins between two tables.
+              </li>
+              <li>
+                <strong>Export & Share:</strong> Download tables as CSV, TSV, JSON, Markdown, or export the entire workspace via the top bar.
+              </li>
+              <li>
                 <strong>Export:</strong> Download individual tables as CSV, TSV, JSON, or Markdown tables anytime.
               </li>
             </ul>

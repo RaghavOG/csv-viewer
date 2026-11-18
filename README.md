@@ -1,12 +1,13 @@
-# PlaneCSV — Infinite Canvas CSV Viewer & Editor
+# CSVee — Infinite Canvas CSV Viewer & Workspace
 
-> An infinite, free-plane workspace (like Excalidraw or Miro) built with **Next.js**, **TypeScript**, and **Tailwind CSS**, designed for pasting, visualizing, analyzing, formatting, and comparing multiple CSVs simultaneously.
+> An infinite free-plane workspace (like Excalidraw or Miro) for pasting, visualizing, analyzing, formatting, joining, and connecting multiple CSVs simultaneously.
 
-Made with ❤️ by [RaghavOG](https://github.com/RaghavOG)
+🔗 **Live App:** [https://csvee.vercel.app/](https://csvee.vercel.app/)  
+👨‍💻 **Author:** [RaghavOG](https://github.com/RaghavOG)
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
 - **Infinite 2D Free Plane (Excalidraw Style)**
   - Infinite dot grid canvas with pan & zoom (15% to 300%).
@@ -19,33 +20,33 @@ Made with ❤️ by [RaghavOG](https://github.com/RaghavOG)
   - Freely drag, resize, minimize, duplicate, or delete cards.
   - Color-accent cards (Indigo, Emerald, Sky, Amber, Rose, Purple, Slate) to visually organize datasets.
 
-- **Smart Pasting & Auto-Formatting**
-  - Hit `Ctrl+V` anywhere on the plane to instantly spawn a formatted table right at your cursor.
-  - Auto-detects Comma (CSV), Tab (TSV from Google Sheets / Excel), Semicolon (`;`), Pipe (`|`), or JSON array of objects.
-  - Drag & drop `.csv`, `.tsv`, `.txt`, `.json` files directly from desktop onto the plane.
+- **Virtual Scrolling (100,000+ Rows at 60 FPS)**
+  - Powered by `@tanstack/react-virtual`, rendering only visible rows for instant performance.
 
-- **Hover Tooltip for Long Cell Content**
-  - When cell data is long or clipped, hovering over the cell reveals a sleek floating popover.
-  - Displays full unclipped text, character count, formatted JSON/URLs, and a 1-click "Copy full text" button.
+- **Non-blocking Background Parsing**
+  - Web Worker chunked parsing handles multi-megabyte files without freezing the canvas.
 
-- **All CSV Formatting Options**
-  - **Sorting**: Single-click header sorting (Ascending / Descending / None).
-  - **Search & Filter**: Real-time keyword filter across rows.
-  - **Column Options**: Hide/show columns, column alignment (left, center, right), rename headers.
-  - **Inline Cell Editing**: Double-click any cell to edit live.
-  - **Add Row / Add Column**: Grow datasets directly in the UI.
-  - **Stats Summary Row**: Toggleable footer showing row counts, sums, averages, and min/max for numerical columns.
-  - **Quick Chart Mode**: Switch between Table View and interactive SVG Bar / Line Charts.
+- **Gigabyte-Scale Persistence**
+  - Uses browser `IndexedDB` (`idb-keyval`) to safely persist massive datasets across sessions.
 
-- **Compare / Diff Tables**
-  - Side-by-side comparison modal between any 2 tables on your plane showing common headers, unique columns, and schemas.
+- **Table Joining (VLOOKUP / SQL Join)**
+  - Perform SQL-style **Left Join**, **Inner Join**, or **Full Outer Join** between any two tables on the canvas.
 
-- **Export Options**
-  - Export any table as `.csv`, `.tsv`, `.json`, or Markdown `.md`.
-  - Copy formatted CSV directly to clipboard.
+- **Visual Relationship Connector Arrows**
+  - Drag from 4 anchor ports on card borders to connect related tables with customizable relation labels (`1:N`, `FK`, etc.).
 
-- **Light & Dark Mode**
-  - Full support for light and dark themes with persistent preference.
+- **Spreadsheet Formulas**
+  - Live formula computation: `=SUM(Col)`, `=AVG(Col)`, `=MIN(Col)`, `=MAX(Col)`, `=COUNT(Col)`, `=CONCAT(ColA, ColB)`, and arithmetic (`=Price * 1.08`).
+
+- **Hover Tooltip on Truncated Data**
+  - Hover over long or multiline cells to view full unclipped text, character count, formatted JSON/URLs, and a 1-click "Copy" button.
+
+- **Real-Time Collaboration**
+  - Live peer cursor tracking and multi-tab synchronization via `BroadcastChannel` with room link sharing.
+
+- **Export & Backup**
+  - Export tables as `.csv`, `.tsv`, `.json`, or Markdown `.md`.
+  - Backup and restore full workspaces using `.planecsv` files.
 
 ---
 
@@ -63,7 +64,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. Build for production
+### 3. Run Test Suite
+```bash
+npm test
+```
+
+### 4. Build for production
 ```bash
 npm run build
 ```
@@ -72,20 +78,10 @@ npm run build
 
 ## 🌐 Deploy to Vercel
 
-### Option 1: Vercel CLI
-```bash
-npx vercel
-```
-
-### Option 2: GitHub / Vercel Dashboard
-1. Push this repository to GitHub or GitLab.
-2. Go to [vercel.com/new](https://vercel.com/new).
-3. Import the repository — Next.js will be detected automatically.
+1. Push your changes to GitHub:
+   ```bash
+   git push origin main
+   ```
+2. In [Vercel](https://vercel.com/new), import your repository: `RaghavOG/csv-viewer`.
+3. Set domain to **`csvee.vercel.app`** in Vercel project settings.
 4. Click **Deploy**!
-
----
-
-## 👨‍💻 Author
-
-Created with care by **[RaghavOG](https://github.com/RaghavOG)**.
-Contributions and feature requests are welcome!

@@ -15,14 +15,15 @@ export async function parseCSVAsync(
   rawContent: string,
   explicitDelimiter?: string
 ): Promise<ParseResult> {
+  const cleanContent = rawContent.replace(/^\uFEFF/, '');
   // If content is small (< 100KB), parse synchronously for instant feel
-  if (rawContent.length < 100000) {
-    return parseCSVData(rawContent, explicitDelimiter);
+  if (cleanContent.length < 100000) {
+    return parseCSVData(cleanContent, explicitDelimiter);
   }
 
   // Large content: use async promise with chunked PapaParse
   return new Promise((resolve) => {
-    Papa.parse<any[]>(rawContent.trim(), {
+    Papa.parse<any[]>(cleanContent.trim(), {
       skipEmptyLines: 'greedy',
       dynamicTyping: true,
       delimiter: explicitDelimiter && explicitDelimiter !== 'auto' ? explicitDelimiter : undefined,
@@ -60,7 +61,7 @@ export async function parseCSVAsync(
 }
 
 export function parseCSVData(rawContent: string, explicitDelimiter?: string): ParseResult {
-  const trimmed = rawContent.trim();
+  const trimmed = rawContent.replace(/^\uFEFF/, '').trim();
 
   // Check if pasted content is JSON array
   if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {

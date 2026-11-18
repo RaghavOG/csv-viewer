@@ -20,6 +20,7 @@ import {
   FolderUp,
   Users,
   Check,
+  Trash2,
 } from 'lucide-react';
 
 const GithubIcon = ({ className = 'w-3.5 h-3.5' }: { className?: string }) => (
@@ -45,6 +46,7 @@ interface ToolbarProps {
   onOpenHelp: () => void;
   onExportWorkspace: () => void;
   onImportWorkspace: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClearAll?: () => void;
   totalTables: number;
   peerCount: number;
 }
@@ -65,6 +67,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onOpenHelp,
   onExportWorkspace,
   onImportWorkspace,
+  onClearAll,
   totalTables,
   peerCount,
 }) => {
@@ -72,7 +75,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText('https://csvee.vercel.app');
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     }
@@ -90,10 +93,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-slate-100">
-                PlaneCSV
+                CSVee
               </span>
               <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
-                infinite
+                canvas
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500">
@@ -193,6 +196,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               className="hidden"
             />
           </label>
+
+          {/* Clear All Tables */}
+          {totalTables > 0 && onClearAll && (
+            <button
+              onClick={() => {
+                if (window.confirm('Clear all tables from the canvas? You can export your workspace first.')) {
+                  onClearAll();
+                }
+              }}
+              className="p-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-500 text-xs transition-colors"
+              title="Clear all tables from canvas"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* Share Live Link */}
           <button

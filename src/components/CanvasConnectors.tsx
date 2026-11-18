@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ConnectorArrow, CSVNode } from '@/types';
 import { X } from 'lucide-react';
 
@@ -8,6 +8,7 @@ interface CanvasConnectorsProps {
   arrows: ConnectorArrow[];
   nodes: CSVNode[];
   onDeleteArrow: (id: string) => void;
+  onUpdateArrow?: (id: string, updates: Partial<ConnectorArrow>) => void;
   activeConnecting?: {
     fromNodeId: string;
     fromSide: 'top' | 'right' | 'bottom' | 'left';
@@ -37,9 +38,12 @@ export const CanvasConnectors: React.FC<CanvasConnectorsProps> = ({
   arrows,
   nodes,
   onDeleteArrow,
+  onUpdateArrow,
   activeConnecting,
 }) => {
   const nodeMap = new Map<string, CSVNode>(nodes.map((n) => [n.id, n]));
+  const [editingArrowId, setEditingArrowId] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState('');
 
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-20">
@@ -98,14 +102,14 @@ export const CanvasConnectors: React.FC<CanvasConnectorsProps> = ({
         const midY = (start.y + end.y) / 2;
 
         return (
-          <g key={arrow.id} className="group/arrow pointer-events-auto cursor-pointer">
+          <g key={arrow.id} className="group/arrow pointer-events-auto">
             {/* Thick hover hit area */}
             <path
               d={pathD}
               fill="none"
               stroke="transparent"
               strokeWidth="16"
-              className="pointer-events-auto"
+              className="pointer-events-auto cursor-pointer"
             />
 
             {/* Visual Arrow Line */}
@@ -114,28 +118,63 @@ export const CanvasConnectors: React.FC<CanvasConnectorsProps> = ({
               fill="none"
               stroke={arrow.color || '#6366f1'}
               strokeWidth="2.5"
-              strokeDasharray={arrow.label?.includes('?') ? '4 4' : 'none'}
               markerEnd="url(#arrowhead-default)"
               className="transition-colors group-hover/arrow:stroke-rose-500"
             />
 
             {/* Label & Delete Badge at Midpoint */}
             <foreignObject
-              x={midX - 32}
-              y={midY - 12}
-              width="64"
-              height="24"
+              x={midX - 50}
+              y={midY - 14}
+              width="100"
+              height="28"
               className="overflow-visible pointer-events-auto"
             >
               <div className="flex items-center justify-center">
-                <button
-                  onClick={() => onDeleteArrow(arrow.id)}
-                  title="Click to remove relation arrow"
-                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-md hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 dark:hover:bg-rose-950/60 dark:hover:text-rose-400 transition-colors flex items-center gap-1 group/btn"
-                >
-                  <span>{arrow.label || '1:N'}</span>
-                  <X className="w-2.5 h-2.5 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                </button>
+                {editingArrowId === arrow.id ? (
+                  <input
+                    type="text"
+                    autoFocus
+                    value={editingLabel}
+                    onChange={(e) => setEditingLabel(e.target.value)}
+                    onBlur={() => {
+                      if (onUpdateArrow && editingLabel.trim()) {
+                        onUpdateArrow(arrow.id, { label: editingLabel.trim() });
+                      }
+                      setEditingArrowId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (onUpdateArrow && editingLabel.trim()) {
+                          onUpdateArrow(arrow.id, { label: editingLabel.trim() });
+                        }
+                        setEditingArrowId(null);
+                      }
+                      if (e.key === 'Escape') setEditingArrowId(null);
+                    }}
+                    className="px-2 py-0.5 text-[10px] rounded-full bg-white dark:bg-slate-800 border border-indigo-500 text-slate-800 dark:text-slate-100 outline-none w-20 text-center font-semibold shadow-lg"
+                  />
+                ) : (
+                  <div className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-md flex items-center gap-1.5 group/btn">
+                    <span
+                      onDoubleClick={() => {
+                        setEditingArrowId(arrow.id);
+                        setEditingLabel(arrow.label || '1:N');
+                      }}
+                      className="cursor-pointer hover:underline truncate max-w-[65px]"
+                      title="Double click to edit label"
+                    >
+                      {arrow.label || '1:N'}
+                    </span>
+                    <button
+                      onClick={() => onDeleteArrow(arrow.id)}
+                      title="Remove relation arrow"
+                      className="text-slate-400 hover:text-rose-500 transition-colors p-0.5"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </foreignObject>
           </g>
