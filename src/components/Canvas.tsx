@@ -302,6 +302,10 @@ export const Canvas: React.FC = () => {
       }
       if (e.key === 'Escape') {
         setSelectedNodeId(null);
+        setIsPasteModalOpen(false);
+        setIsDiffModalOpen(false);
+        setIsJoinModalOpen(false);
+        setIsHelpOpen(false);
       }
     };
 

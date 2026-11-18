@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, Clipboard, Sparkles, Check } from 'lucide-react';
 import { parseCSVData } from '@/utils/csvParser';
 import { CSVNode } from '@/types';
@@ -39,6 +39,17 @@ export const PasteModal: React.FC<PasteModalProps> = ({ isOpen, onClose, onAddTa
   const [title, setTitle] = useState('New Table');
   const [delimiter, setDelimiter] = useState('auto');
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const parsed = rawText.trim() ? parseCSVData(rawText, delimiter) : null;
@@ -73,7 +84,12 @@ export const PasteModal: React.FC<PasteModalProps> = ({ isOpen, onClose, onAddTa
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+    >
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">

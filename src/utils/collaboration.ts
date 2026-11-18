@@ -25,7 +25,7 @@ export class CollabManager {
     this.myColor = PEER_COLORS[Math.floor(Math.random() * PEER_COLORS.length)];
 
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      this.channel = new BroadcastChannel('planecsv_sync_channel');
+      this.channel = new BroadcastChannel('csvee_sync_channel');
       this.channel.onmessage = (event: MessageEvent<CollabMessage>) => {
         this.handleMessage(event.data);
       };

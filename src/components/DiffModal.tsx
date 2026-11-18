@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, GitCompare, CheckCircle2, AlertCircle } from 'lucide-react';
 import { CSVNode } from '@/types';
 
@@ -13,6 +13,17 @@ interface DiffModalProps {
 export const DiffModal: React.FC<DiffModalProps> = ({ isOpen, onClose, nodes }) => {
   const [tableAId, setTableAId] = useState<string>(nodes[0]?.id || '');
   const [tableBId, setTableBId] = useState<string>(nodes[1]?.id || nodes[0]?.id || '');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -28,7 +39,12 @@ export const DiffModal: React.FC<DiffModalProps> = ({ isOpen, onClose, nodes }) 
   const onlyInB = headersB.filter((h) => !headersA.includes(h));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+    >
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl flex flex-col max-h-[85vh] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
