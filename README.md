@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PlaneCSV — Infinite Canvas CSV Viewer & Editor
 
-## Getting Started
+An infinite, free-plane workspace (like Excalidraw or Miro) built with **Next.js**, **TypeScript**, and **Tailwind CSS**, designed for pasting, visualizing, analyzing, formatting, and comparing multiple CSVs simultaneously.
 
-First, run the development server:
+Ready for 1-click deployment on **Vercel**.
 
+---
+
+## ✨ Features
+
+- **Infinite 2D Canvas (Excalidraw Style)**
+  - Infinite dot grid canvas with pan & zoom (15% to 300%).
+  - Pan with mouse drag, middle click, or `Space + Drag`.
+  - Smooth pinch-to-zoom and mouse-wheel zoom centered on cursor.
+  - "Zoom to Fit" button to auto-frame all your tables.
+
+- **Multiple CSVs in One Plane**
+  - Drop or paste dozens of tables onto the same canvas.
+  - Freely drag, resize, minimize, duplicate, or delete cards.
+  - Color-accent cards (Indigo, Emerald, Sky, Amber, Rose, Purple, Slate) to visually organize datasets.
+
+- **Smart Pasting & Auto-Formatting**
+  - Hit `Ctrl+V` anywhere on the plane to instantly spawn a formatted table right at your cursor.
+  - Auto-detects Comma (CSV), Tab (TSV from Google Sheets / Excel), Semicolon (`;`), Pipe (`|`), or JSON array of objects.
+  - Drag & drop `.csv`, `.tsv`, `.txt`, `.json` files directly from desktop onto the plane.
+
+- **Hover Tooltip for Long Cell Content**
+  - When cell data is long or clipped, hovering over the cell reveals a sleek floating popover.
+  - Displays full unclipped text, character count, formatted JSON/URLs, and a 1-click "Copy full text" button.
+
+- **All CSV Formatting Options**
+  - **Sorting**: Single-click header sorting (Ascending / Descending / None).
+  - **Search & Filter**: Real-time keyword filter across rows.
+  - **Column Options**: Hide/show columns, column alignment (left, center, right), rename headers.
+  - **Inline Cell Editing**: Double-click any cell to edit live.
+  - **Add Row / Add Column**: Grow datasets directly in the UI.
+  - **Stats Summary Row**: Toggleable footer showing row counts, sums, averages, and min/max for numerical columns.
+  - **Quick Chart Mode**: Switch between Table View and interactive SVG Bar / Line Charts.
+
+- **Compare / Diff Tables**
+  - Side-by-side comparison modal between any 2 tables on your plane showing common headers, unique columns, and schemas.
+
+- **Export Options**
+  - Export any table as `.csv`, `.tsv`, `.json`, or Markdown `.md`.
+  - Copy formatted CSV directly to clipboard.
+
+- **Light & Dark Mode**
+  - Full support for light and dark themes with persistent preference.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run development server
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Build for production
+```bash
+npm run build
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🌐 Deploy to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Option 1: Vercel CLI
+```bash
+npx vercel
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Option 2: GitHub / Vercel Dashboard
+1. Push this repository to GitHub or GitLab.
+2. Go to [vercel.com/new](https://vercel.com/new).
+3. Import the repository — Next.js will be detected automatically.
+4. Click **Deploy**!
