@@ -1,0 +1,9 @@
+Customer ID,Customer Name,Organization,Primary Email,City,Country,Account Tier,Lifetime Spend ($),Active Contract
+CUST-701,Elena Rostova,Cyberdyne Systems Corp,elena.rostova@cyberdyne.systems,San Francisco,United States,Enterprise Platinum,125400.00,true
+CUST-702,Thomas Anderson,Metacortex Software Global,thomas.anderson@metacortex.io,Zurich,Switzerland,Enterprise Gold,84200.50,true
+CUST-703,Kenji Sato,Nakatomi Trading Group,kenji.sato@nakatomi.co.jp,Tokyo,Japan,Growth Pro,49300.00,true
+CUST-704,Gordon Freeman,Black Mesa Research Facility,gordon.freeman@blackmesa.gov,Albuquerque,United States,Enterprise Platinum,210000.00,true
+CUST-705,Bruce Wayne,Wayne Enterprises International,bruce.wayne@wayneenterprises.com,Gotham,United States,VIP Enterprise,450000.00,true
+CUST-706,Carmen Sandiego,V.I.L.E. Logistics Network,carmen.sandiego@vile-detective.org,Paris,France,Growth Pro,31200.00,false
+CUST-707,Motoko Kusanagi,Public Security Section 9,motoko.kusanagi@section9.jp,Niihama,Japan,Enterprise Gold,92150.00,true
+CUST-708,Sarah Connor,Skynet Resistance Alliance,sarah.connor@resistance.net,Los Angeles,United States,Standard Core,14500.00,true

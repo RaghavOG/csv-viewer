@@ -1,0 +1,11 @@
+Order ID,Customer ID,Product Name,Quantity,Unit Price ($),Total ($),Order Date,Status,Tracking URL
+ORD-1001,CUST-701,Apple MacBook Pro 16" M3 Max 36GB Unified Memory 1TB SSD Space Black Workstation,2,3499.00,6998.00,2024-11-01,Delivered,https://fedex.com/tracking?id=FX-9823471029384729
+ORD-1002,CUST-702,Dell UltraSharp 32" Curved 4K USB-C Hub Monitor (U3223QE) with IPS Black Technology,4,799.50,3198.00,2024-11-03,Shipped,https://ups.com/track?loc=en_US&tracknum=1Z9999999999999999
+ORD-1003,CUST-703,Keychron Q1 Pro Wireless Custom Mechanical Keyboard RGB Hot-Swappable Red Switches,8,199.00,1592.00,2024-11-05,Delivered,https://dhl.com/en/express/tracking.html?AWB=8492019482
+ORD-1004,CUST-701,Logitech MX Master 3S Performance Wireless Mouse Ergonomic 8K DPI Dark Gray,12,99.99,1199.88,2024-11-06,Processing,https://usps.com/tools/track?trackNumber=940011189956253762
+ORD-1005,CUST-704,CalDigit TS4 Thunderbolt 4 Dock 18-in-1 Dual 4K 60Hz 98W Power Delivery,3,399.95,1199.85,2024-11-08,Delivered,https://fedex.com/tracking?id=FX-5647382910483920
+ORD-1006,CUST-705,Herman Miller Embody Ergonomic Office Chair Fully Adjustable Arms Graphite,2,1795.00,3590.00,2024-11-10,Pending,https://freight.freightquote.com/track/HM-8392019
+ORD-1007,CUST-702,Sony WH-1000XM5 Wireless Noise-Canceling Overhead Headphones with Auto NC Optimizer,6,398.00,2388.00,2024-11-12,Delivered,https://ups.com/track?loc=en_US&tracknum=1Z8888888888888888
+ORD-1008,CUST-703,Elgato Stream Deck XL 32 Customizable LCD Keys Dynamic Studio Controller,5,249.99,1249.95,2024-11-14,Delivered,https://dhl.com/en/express/tracking.html?AWB=9382019485
+ORD-1009,CUST-706,Anker 737 Power Bank (PowerCore 24K) 140W Portable Charger 3-Port Fast Output,15,149.99,2249.85,2024-11-15,Shipped,https://fedex.com/tracking?id=FX-1928374650192837
+ORD-1010,CUST-707,Apple Studio Display 27" 5K Retina Nano-Texture Glass Tilt-Adjustable Stand,1,1899.00,1899.00,2024-11-16,Delivered,https://fedex.com/tracking?id=FX-7483920194857362
