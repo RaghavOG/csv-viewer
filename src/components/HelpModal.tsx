@@ -115,7 +115,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 <strong>Connector Arrows:</strong> Hover any table to see the 4 port circles on the borders. Click and drag to another table to draw relationship arrows! Double click the label on an arrow to rename it.
               </li>
               <li>
-                <strong>Table Join / VLOOKUP:</strong> Click "Join" in the top bar to perform SQL-style Left, Inner, or Full Outer joins between two tables.
+                <strong>Table Join / VLOOKUP:</strong> Click &quot;Join&quot; in the top bar to perform SQL-style Left, Inner, or Full Outer joins between two tables.
               </li>
               <li>
                 <strong>Export & Share:</strong> Download tables as CSV, TSV, JSON, Markdown, or export the entire workspace via the top bar.

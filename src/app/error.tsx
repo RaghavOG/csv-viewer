@@ -18,10 +18,10 @@ export default function GlobalError({
     try {
       localStorage.clear();
       indexedDB.deleteDatabase('keyval-store');
-    } catch (e) {
+    } catch {
       // ignore
     }
-    window.location.href = '/';
+    window.location.reload();
   };
 
   return (

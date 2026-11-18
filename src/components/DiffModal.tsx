@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, GitCompare, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, GitCompare, CheckCircle2 } from 'lucide-react';
 import { CSVNode } from '@/types';
 
 interface DiffModalProps {

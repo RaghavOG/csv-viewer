@@ -1,4 +1,4 @@
-import { get, set, del } from 'idb-keyval';
+import { get, set } from 'idb-keyval';
 import { CSVNode, ConnectorArrow } from '@/types';
 
 const TABLES_KEY = 'plane_csv_tables_idb';

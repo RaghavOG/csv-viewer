@@ -84,8 +84,8 @@ export const CanvasConnectors: React.FC<CanvasConnectorsProps> = ({
         const dy = Math.abs(end.y - start.y) * 0.5;
         const offset = Math.max(40, Math.min(120, Math.max(dx, dy)));
 
-        let cp1 = { x: start.x, y: start.y };
-        let cp2 = { x: end.x, y: end.y };
+        const cp1 = { x: start.x, y: start.y };
+        const cp2 = { x: end.x, y: end.y };
 
         if (arrow.fromSide === 'right') cp1.x += offset;
         else if (arrow.fromSide === 'left') cp1.x -= offset;

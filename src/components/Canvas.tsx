@@ -12,7 +12,7 @@ import {
 } from '@/utils/storage';
 import { CollabManager } from '@/utils/collaboration';
 import { CSVCard } from './CSVCard';
-import { CanvasConnectors, getNodePortCoord } from './CanvasConnectors';
+import { CanvasConnectors } from './CanvasConnectors';
 import { PeerCursors } from './PeerCursors';
 import { Toolbar } from './Toolbar';
 import { PasteModal } from './PasteModal';
@@ -63,12 +63,36 @@ export const Canvas: React.FC = () => {
   const [peers, setPeers] = useState<Map<string, PeerCursor>>(new Map());
   const collabRef = useRef<CollabManager | null>(null);
   const nodesRef = useRef<CSVNode[]>(nodes);
-  nodesRef.current = nodes;
   const arrowsRef = useRef<ConnectorArrow[]>(arrows);
-  arrowsRef.current = arrows;
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    arrowsRef.current = arrows;
+  }, [arrows]);
 
   // Theme
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('plane_csv_theme') as 'light' | 'dark' | null;
+      if (savedTheme) {
+        setTimeout(() => setTheme(savedTheme), 0);
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    } catch {
+      // Storage unavailable
+    }
+  }, []);
 
   // Modals
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
@@ -91,19 +115,8 @@ export const Canvas: React.FC = () => {
     [pan, zoom]
   );
 
-  // Initialize theme, IndexedDB, and Collaboration Channel
+  // Initialize IndexedDB and Collaboration Channel
   useEffect(() => {
-    // Theme setup
-    const savedTheme = localStorage.getItem('plane_csv_theme') as 'light' | 'dark' | null;
-    const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(initialTheme);
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Load tables from high-capacity IndexedDB
     loadTablesFromStorage().then((savedNodes) => {
       if (savedNodes && savedNodes.length > 0) {
         setNodes(savedNodes);
@@ -203,14 +216,20 @@ export const Canvas: React.FC = () => {
 
   // Toggle Theme
   const handleToggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('plane_csv_theme', next);
-    if (next === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem('plane_csv_theme', next);
+      } catch {
+        // ignore
+      }
+      if (next === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return next;
+    });
   };
 
   // Zoom to Fit All
@@ -318,6 +337,20 @@ export const Canvas: React.FC = () => {
     return () => window.removeEventListener('paste', handlePaste);
   }, [addNewTable]);
 
+  // Delete a node
+  const handleDeleteNode = useCallback((id: string) => {
+    setNodes((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      if (next.length === 0) {
+        setPan({ x: 0, y: 0 });
+        setZoom(1);
+      }
+      collabRef.current?.broadcastNodes(next);
+      return next;
+    });
+    setArrows((prev) => prev.filter((a) => a.fromNodeId !== id && a.toNodeId !== id));
+  }, []);
+
   // Space key pan tool
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -356,7 +389,7 @@ export const Canvas: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [handleDeleteNode, selectedNodeId]);
 
   // Mouse Wheel Zooming & Trackpad Panning
   const handleWheel = (e: React.WheelEvent) => {
@@ -551,20 +584,6 @@ export const Canvas: React.FC = () => {
     });
   };
 
-  // Delete a node
-  const handleDeleteNode = (id: string) => {
-    setNodes((prev) => {
-      const next = prev.filter((n) => n.id !== id);
-      if (next.length === 0) {
-        setPan({ x: 0, y: 0 });
-        setZoom(1);
-      }
-      collabRef.current?.broadcastNodes(next);
-      return next;
-    });
-    setArrows((prev) => prev.filter((a) => a.fromNodeId !== id && a.toNodeId !== id));
-  };
-
   // Clear all tables and arrows
   const handleClearAll = () => {
     setNodes([]);
@@ -577,10 +596,11 @@ export const Canvas: React.FC = () => {
   };
 
   // Duplicate a node
-  const handleDuplicateNode = (node: CSVNode) => {
+  const handleDuplicateNode = useCallback((node: CSVNode) => {
+    const copyId = `table-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const copy: CSVNode = {
       ...node,
-      id: `table-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: copyId,
       title: `${node.title} (Copy)`,
       x: node.x + 40,
       y: node.y + 40,
@@ -590,7 +610,7 @@ export const Canvas: React.FC = () => {
       collabRef.current?.broadcastNodes(next);
       return next;
     });
-  };
+  }, []);
 
   // Async File Upload via Toolbar or Drag & Drop
   const processUploadedFile = (file: File, clientCoords?: { x: number; y: number }) => {

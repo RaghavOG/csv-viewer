@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, GitMerge, ArrowRight, TableProperties, Sparkles } from 'lucide-react';
+import { X, GitMerge, Sparkles } from 'lucide-react';
 import { CSVNode } from '@/types';
 
 interface JoinModalProps {

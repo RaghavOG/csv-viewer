@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Clipboard, Sparkles, Check } from 'lucide-react';
+import { X, Upload, Clipboard, Sparkles } from 'lucide-react';
 import { parseCSVData } from '@/utils/csvParser';
-import { CSVNode } from '@/types';
 
 interface PasteModalProps {
   isOpen: boolean;
