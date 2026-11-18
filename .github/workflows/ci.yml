@@ -1,4 +1,4 @@
-name: Build and Type Check
+name: CI Pipeline
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test-and-build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -22,5 +22,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js application
+      - name: Run Unit Tests
+        run: npx playwright test tests/unit.spec.ts
+
+      - name: Build Next.js Application
         run: npm run build
