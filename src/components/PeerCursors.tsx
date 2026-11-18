@@ -9,11 +9,16 @@ interface PeerCursorsProps {
 }
 
 export const PeerCursors: React.FC<PeerCursorsProps> = ({ cursors }) => {
+  // Only render visual cursor once mouse coordinates have been transmitted
+  const activeCursors = cursors.filter((p) => p.x !== 0 || p.y !== 0);
+
   return (
     <>
-      {cursors.map((peer) => (
+      {activeCursors.map((peer) => (
         <div
           key={peer.id}
+          data-testid="peer-cursor"
+          data-peer-name={peer.name}
           style={{
             transform: `translate(${peer.x}px, ${peer.y}px)`,
           }}

@@ -62,6 +62,10 @@ export const Canvas: React.FC = () => {
   // Collaboration State
   const [peers, setPeers] = useState<Map<string, PeerCursor>>(new Map());
   const collabRef = useRef<CollabManager | null>(null);
+  const nodesRef = useRef<CSVNode[]>(nodes);
+  nodesRef.current = nodes;
+  const arrowsRef = useRef<ConnectorArrow[]>(arrows);
+  arrowsRef.current = arrows;
 
   // Theme
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -127,6 +131,34 @@ export const Canvas: React.FC = () => {
       });
     });
 
+    collab.onPeerJoin((peer) => {
+      setPeers((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(peer.id);
+        next.set(peer.id, {
+          ...peer,
+          x: existing?.x ?? peer.x,
+          y: existing?.y ?? peer.y,
+        });
+        return next;
+      });
+      // Synchronize existing tables with new collaborator
+      if (nodesRef.current && nodesRef.current.length > 0) {
+        collab.broadcastNodes(nodesRef.current);
+      }
+      if (arrowsRef.current && arrowsRef.current.length > 0) {
+        collab.broadcastArrows(arrowsRef.current);
+      }
+    });
+
+    collab.onPeerLeave((peerId) => {
+      setPeers((prev) => {
+        const next = new Map(prev);
+        next.delete(peerId);
+        return next;
+      });
+    });
+
     collab.onSyncNodes((syncedNodes) => {
       setNodes(syncedNodes);
     });
@@ -135,19 +167,22 @@ export const Canvas: React.FC = () => {
       setArrows(syncedArrows);
     });
 
-    // Cleanup stale cursors every 5 seconds
+    // Cleanup stale cursors every 2 seconds if inactive for > 4.5 seconds
     const interval = setInterval(() => {
       const now = Date.now();
       setPeers((prev) => {
+        let changed = false;
         const next = new Map();
         prev.forEach((p, k) => {
-          if (now - p.lastActive < 10000) {
+          if (now - p.lastActive < 4500) {
             next.set(k, p);
+          } else {
+            changed = true;
           }
         });
-        return next;
+        return changed ? next : prev;
       });
-    }, 5000);
+    }, 2000);
 
     return () => {
       clearInterval(interval);
