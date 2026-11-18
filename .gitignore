@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# internal engineering documentation (local only, kept off GitHub)
+/internal-docs/
