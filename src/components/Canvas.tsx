@@ -549,9 +549,34 @@ export const Canvas: React.FC = () => {
 
   // Async File Upload via Toolbar or Drag & Drop
   const processUploadedFile = (file: File, clientCoords?: { x: number; y: number }) => {
+    const isWorkspaceFile = file.name.endsWith('.csvee') || file.name.endsWith('.planecsv');
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       const content = event.target?.result as string;
+
+      // Check if dropped file is an Excalidraw-style .csvee workspace file
+      if (isWorkspaceFile || file.name.endsWith('.json')) {
+        try {
+          const parsed = JSON.parse(content);
+          if (parsed.nodes && Array.isArray(parsed.nodes)) {
+            setNodes(parsed.nodes);
+            collabRef.current?.broadcastNodes(parsed.nodes);
+            if (parsed.arrows && Array.isArray(parsed.arrows)) {
+              setArrows(parsed.arrows);
+              collabRef.current?.broadcastArrows(parsed.arrows);
+            }
+            if (parsed.pan && parsed.zoom) {
+              setPan(parsed.pan);
+              setZoom(parsed.zoom);
+            }
+            return;
+          }
+        } catch {
+          // If JSON parse fails or is not a workspace, proceed with tabular parsing
+        }
+      }
+
       const parsed = await parseCSVAsync(content);
       addNewTable(
         {
@@ -573,11 +598,14 @@ export const Canvas: React.FC = () => {
     }
   };
 
-  // Export Entire Workspace to .planecsv JSON
+  // Export Entire Workspace to Excalidraw-style .csvee file
   const handleExportWorkspace = () => {
     const project = {
+      app: 'CSVee',
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
+      pan,
+      zoom,
       nodes,
       arrows,
     };
@@ -585,14 +613,14 @@ export const Canvas: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PlaneCSV_Workspace_${new Date().toISOString().slice(0, 10)}.planecsv`;
+    a.download = `CSVee_Workspace_${new Date().toISOString().slice(0, 10)}.csvee`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  // Import Entire Workspace from .planecsv JSON
+  // Import Entire Workspace from .csvee JSON
   const handleImportWorkspace = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -609,8 +637,12 @@ export const Canvas: React.FC = () => {
           setArrows(parsed.arrows);
           collabRef.current?.broadcastArrows(parsed.arrows);
         }
+        if (parsed.pan && parsed.zoom) {
+          setPan(parsed.pan);
+          setZoom(parsed.zoom);
+        }
       } catch {
-        alert('Invalid .planecsv project file.');
+        alert('Invalid .csvee project file.');
       }
     };
     reader.readAsText(file);

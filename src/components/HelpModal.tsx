@@ -69,7 +69,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 <strong>Excel & Google Sheets:</strong> Copy cells directly from Google Sheets or Excel and paste on the plane. It automatically recognizes tabs, commas, semicolons, or pipes.
               </li>
               <li>
-                <strong>Drag & Drop:</strong> Drag any <code className="font-mono text-indigo-500">.csv</code>, <code className="font-mono text-indigo-500">.tsv</code>, or <code className="font-mono text-indigo-500">.json</code> file straight from your computer onto the plane.
+                <strong>Drag & Drop:</strong> Drag any <code className="font-mono text-indigo-500">.csv</code>, <code className="font-mono text-indigo-500">.tsv</code>, <code className="font-mono text-indigo-500">.json</code>, or <code className="font-mono text-indigo-500">.csvee</code> workspace file straight from your computer onto the plane.
               </li>
             </ul>
           </div>

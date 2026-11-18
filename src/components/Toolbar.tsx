@@ -178,7 +178,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <button
             onClick={onExportWorkspace}
             className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors"
-            title="Export Entire Workspace as .planecsv JSON"
+            title="Export Entire Workspace as .csvee (Excalidraw-style file)"
           >
             <FolderDown className="w-3.5 h-3.5" />
           </button>
@@ -186,12 +186,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           {/* Import Workspace */}
           <label
             className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs cursor-pointer transition-colors"
-            title="Import Workspace (.planecsv JSON)"
+            title="Import Workspace (.csvee, .planecsv, or .json)"
           >
             <FolderUp className="w-3.5 h-3.5" />
             <input
               type="file"
-              accept=".json,.planecsv"
+              accept=".csvee,.planecsv,.json"
               onChange={onImportWorkspace}
               className="hidden"
             />
