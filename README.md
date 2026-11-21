@@ -7,6 +7,19 @@
 
 ---
 
+## 📸 Visual Overview
+
+![CSVee Infinite Canvas Hero](./image2.png)
+
+<p align="center">
+  <img src="./image.png" alt="CSVee Table View" width="49%" />
+  <img src="./image3.png" alt="CSVee Diagram Relations" width="49%" />
+</p>
+
+![CSVee Workspace Overview](./image4.png)
+
+---
+
 ## ✨ Features
 
 - **Infinite 2D Free Plane (Excalidraw Style)**
@@ -46,7 +59,7 @@
 
 - **Export & Backup**
   - Export tables as `.csv`, `.tsv`, `.json`, or Markdown `.md`.
-  - Backup and restore full workspaces using `.planecsv` files.
+  - Backup and restore full workspaces using `.csvee` files.
 
 ---
 
