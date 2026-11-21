@@ -9,14 +9,19 @@
 
 ## 📸 Visual Overview
 
-![CSVee Infinite Canvas Hero](./image2.png)
-
-<p align="center">
-  <img src="./image.png" alt="CSVee Table View" width="49%" />
-  <img src="./image3.png" alt="CSVee Diagram Relations" width="49%" />
-</p>
-
 ![CSVee Workspace Overview](./image4.png)
+
+<br/>
+
+![CSVee Table View](./image.png)
+
+<br/>
+
+![CSVee Diagram Relations](./image3.png)
+
+<br/>
+
+![CSVee Infinite Canvas](./image2.png)
 
 ---
 
